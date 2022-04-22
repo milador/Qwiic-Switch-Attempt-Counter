@@ -27,3 +27,8 @@
   4. Take [STEMMA QT / Qwiic JST SH 4-Pin Cable](https://www.adafruit.com/product/4399)
   5. Connect one end of the [STEMMA QT / Qwiic JST SH 4-Pin Cable](https://www.adafruit.com/product/4399) to the other STEMMA connector of [Qwiic-Adaptive-Switch-Input](https://github.com/milador/Qwiic-Adaptive-Switch).
   6. Connect one other end of the [STEMMA QT / Qwiic JST SH 4-Pin Cable](https://www.adafruit.com/product/4399) to the reminding STEMMA connector of [Qwiic-Adaptive-Switch-Output](https://github.com/milador/Qwiic-Adaptive-Switch).
+  
+  
+  <p align="center">
+<img align="center" src="../Resources/Images/Qwiic_Switch_Attempt_Counter.png" width="50%" height="50%" alt="Setup Diagram"/>
+</p>

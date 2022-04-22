@@ -5,6 +5,10 @@ This repository offers the required information for creating an Open Source Assi
 
 A device to track the number of adapted switch input activations based on Qwiic Adaptive Switch modules and Wio Terminal.
 
+<p align="center">
+<img align="center" src="./Resources/Images/Qwiic_Switch_Attempt_Counter.png" width="50%" height="50%" alt="Setup Diagram"/>
+</p>
+
 ## Requirements and setup instructions 
 The setup process is divided to three main catagories:
 
