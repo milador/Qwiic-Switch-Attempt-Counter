@@ -1,7 +1,7 @@
 /******************************************************************************
   Title: Qwiic Switch Attempt Counter
   File: Qwiic_Switch_Attempt_Counter.ino
-  Created: April 16, 2022
+  Created: May 8, 2022
   https://github.com/milador/Qwiic-Switch-Attempt-Counter
 
 ******************************************************************************/
@@ -10,6 +10,21 @@
 #include "SparkFun_TCA9534.h"
 #include"TFT_eSPI.h"
 #include"Free_Fonts.h" 
+#include <Seeed_Arduino_FS.h>
+
+
+#ifdef WIO_LITE_AI
+#define CARD  SDMMC 
+#else
+#define CARD  SD
+#ifdef _SAMD21_
+#define SDCARD_SS_PIN 1
+#define SDCARD_SPI SPI
+#endif 
+#endif
+
+    
+#define LOG Serial
 
 TFT_eSPI tft;
 
@@ -20,8 +35,10 @@ TCA9534 outputModule;           //Output
 #define INPUT_ADDR               0x27
 #define OUTPUT_ADDR              0x26
 
-#define NUM_SWITCH 2            //Switch A and B
-#define UPDATE_SWITCH_RATE 100  //100ms
+#define SESSION_FILE_PATH "/session.txt"
+#define NUM_SWITCH 2                   //Switch A and B
+#define UPDATE_SWITCH_DELAY 100        //100ms
+#define BUTTON_DEBOUNCE_DELAY 200      //200ms
 #define NUM_SESSION 254
 #define NUM_LIST_ITEM 4         //Display how many sessions in main page list
 
@@ -48,13 +65,15 @@ typedef struct {
 
 const menuType menuProperty[] {                         //C, B , A
     {"", "", ""},                                       //Intro
-    {"Conf", "Save", "Enter"},                          //Main
+    {"Load", "Save", "Enter"},                          //Main
     {"Back", "Reset", "Edit"},                          //Session
     {"Cancel", "", "Save"},                             //Config
     {"Cancel", "", "Save"}                              //Edit Session
 };
 
 sessionType sessionAttempt[NUM_SESSION];                //Array of sessions 
+
+String sessionString[NUM_SESSION];                      //Session string data
 
 unsigned long sessionNumber = 0;                        //Current session number
 
@@ -66,7 +85,7 @@ int listPageNumber = 0;                                 //Current main page item
 
 void setup() {
   
-  Serial.begin(115200);
+  LOG.begin(115200);
 
   tft.begin();
 
@@ -77,16 +96,18 @@ void setup() {
   Wire.begin();
   
   showMain();                                 //Show main page
+
+  initializeSD();                             //Setup SD Card
   
   while (1) { //Both input and output modules are successfully detected 
     if (inputModule.begin(Wire,INPUT_ADDR) == true && outputModule.begin(Wire,OUTPUT_ADDR) == true ) {
       switchConnectionMessage = "Success: Qwiic Modules are detected";
-      Serial.println(switchConnectionMessage);
+      LOG.println(switchConnectionMessage);
       showConnection();
       break;
     } else {
       switchConnectionMessage = "Error: Qwiic Modules are not detected";
-      Serial.println(switchConnectionMessage);
+      LOG.println(switchConnectionMessage);
       showConnection();
       delay(3000);
     }
@@ -237,6 +258,21 @@ void showMenu() {
   tft.drawString(buttonATitle, 17, 6);
 }
 
+/*** Show Loading Message***/
+void showLoading(String text) {
+
+  tft.setRotation(3);
+
+  tft.fillScreen(TFT_BLACK);                       //Black background
+
+  tft.setTextColor(TFT_WHITE, TFT_BLACK); 
+
+  tft.setFreeFont(FF24);                           
+  tft.drawString(text, 50, 110);
+
+  delay(2000);  
+}
+
 /*** Show Qwiic modules connection state***/
 void showConnection() {
   
@@ -307,7 +343,7 @@ void loop() {
       break;
   }
 
-  delay(UPDATE_SWITCH_RATE);
+  delay(UPDATE_SWITCH_DELAY);
 }
 
 /***Intro Page Loop***/
@@ -321,26 +357,39 @@ void mainLoop() {
   //Enter or start session 
   if (digitalRead(WIO_KEY_A) == LOW) {
     showSession();    
+    delay(BUTTON_DEBOUNCE_DELAY);
   } //Save data in SD Card
   else if (digitalRead(WIO_KEY_B) == LOW) {
-    
-  } // Show configuration 
+    showLoading("Saving...");
+    deleteFile(CARD, SESSION_FILE_PATH);                    //Delete existing data
+    writeSessionAll(CARD, SESSION_FILE_PATH,NUM_SESSION);
+    showMain();  
+    showConnection(); 
+    delay(BUTTON_DEBOUNCE_DELAY);   
+  } //Load data in SD Card
   else if (digitalRead(WIO_KEY_C) == LOW) {
-
+    showLoading("Loading...");
+    readSessionAll(CARD, SESSION_FILE_PATH);
+    showMain();  
+    showConnection();  
+    delay(BUTTON_DEBOUNCE_DELAY);
   }
   //Highlight previous session 
   if (digitalRead(WIO_5S_UP) == LOW) {
     decreaseSessionNumber();
     showMain();  
     showConnection();
+    delay(BUTTON_DEBOUNCE_DELAY);
   } //Highlight next session 
   else if (digitalRead(WIO_5S_DOWN) == LOW) {
     increaseSessionNumber();
     showMain();  
     showConnection();
+    delay(BUTTON_DEBOUNCE_DELAY);
   } //Enter or start session 
   else if (digitalRead(WIO_5S_PRESS) == LOW) {
     showSession();
+    delay(BUTTON_DEBOUNCE_DELAY);
   }
 
 
@@ -359,15 +408,17 @@ void mainLoop() {
 void sessionLoop() {
   //Edit session 
   if (digitalRead(WIO_KEY_A) == LOW) {
-  
+    delay(BUTTON_DEBOUNCE_DELAY);
   } //Reset session data
   else if (digitalRead(WIO_KEY_B) == LOW) {
     resetSessionData(sessionNumber);
     showSession();
+    delay(BUTTON_DEBOUNCE_DELAY);
   } //Back to main page
   else if (digitalRead(WIO_KEY_C) == LOW) {
     showMain();  
     showConnection();
+    delay(BUTTON_DEBOUNCE_DELAY);
   }
 
   //Switch A input and output 
@@ -386,4 +437,127 @@ void sessionLoop() {
     ++sessionAttempt[sessionNumber].sessionCountB;
     showSession();
   };
+}
+
+/***Initialize SD Card***/
+void initializeSD() {
+    while (!CARD.begin(SDCARD_SS_PIN,SDCARD_SPI,4000000UL)) {
+        LOG.println("Card Mount Failed");
+        return;
+    }  
+
+    uint8_t cardType = CARD.cardType();
+    if (cardType == CARD_NONE) {
+        LOG.println("No SD card attached");
+        return;
+    }
+}
+
+/***Create Directory***/
+void createDir(fs::FS& fs, const char* path) {
+    LOG.print("Creating Dir: ");
+    LOG.println(path);
+    if (fs.mkdir(path)) {
+        LOG.println("Dir created");
+    } else {
+        LOG.println("mkdir failed");
+    }
+}
+
+/***Remove Directory***/
+void removeDir(fs::FS& fs, const char* path) {
+    LOG.print("Removing Dir: ");
+    LOG.println(path);
+    if (fs.rmdir(path)) {
+        LOG.println("Dir removed");
+    } else {
+        LOG.println("rmdir failed");
+    }
+}
+
+/***Append to the file***/
+void appendFile(fs::FS& fs, const char* path, const char* message) {
+    LOG.print("Appending to file: ");
+    LOG.println(path);
+
+    File file = fs.open(path, FILE_APPEND);
+    if (!file) {
+        LOG.println("Failed to open file for appending");
+        return;
+    }
+    if (file.print(message)) {
+        LOG.println("Message appended");
+    } else {
+        LOG.println("Append failed");
+    }
+    file.close();
+}
+
+/***Delete file***/
+void deleteFile(fs::FS& fs, const char* path) {
+    LOG.print("Deleting file: ");
+    LOG.println(path);
+    if (fs.remove(path)) {
+        LOG.println("File deleted");
+    } else {
+        LOG.println("Delete failed");
+    }
+}
+
+/***Read all session lines from file and parse***/
+void readSessionAll(fs::FS& fs, const char* path) {
+    File file = fs.open(path);
+    if (!file) {
+        LOG.println("Failed to open file for reading");
+        return;
+    }
+    int sessionIndex = 0;
+    while (file.available()) {
+        char readChar = file.read();
+        if(readChar == '\n'){
+          sessionIndex+=1;
+          sessionString[sessionIndex]="";
+        }      
+        else{
+          sessionString[sessionIndex].concat(readChar);
+        }
+    }
+
+    file.close();
+    parseSessionAll(sessionIndex);         //Parse session lines
+
+}
+/***Parse session data***/
+void parseSessionAll(int numberSession){
+    for (uint8_t sessionIndex = 0; sessionIndex < numberSession; sessionIndex++) {
+      int firstCommaIndex = sessionString[sessionIndex].indexOf(',');
+      int secondCommaIndex = sessionString[sessionIndex].indexOf(',', firstCommaIndex+1);
+      sessionAttempt[sessionIndex].sessionTitle = sessionString[sessionIndex].substring(0, firstCommaIndex);
+      sessionAttempt[sessionIndex].sessionCountA = sessionString[sessionIndex].substring(firstCommaIndex+1, secondCommaIndex).toInt();
+      sessionAttempt[sessionIndex].sessionCountB = sessionString[sessionIndex].substring(secondCommaIndex+1).toInt();
+    }
+}
+
+/***Write a session data to file***/
+void writeSession(fs::FS& fs, const char* path,String sessionTitle,unsigned long sessionCountA,unsigned long sessionCountB){
+    String resultString = "";
+    resultString.concat(sessionTitle);
+    resultString.concat(",");
+    resultString.concat(sessionCountA);
+    resultString.concat(",");
+    resultString.concat(sessionCountB);
+    resultString.concat("\n");
+    const char* resultChar = resultString.c_str();
+    appendFile(fs, path,resultChar);  
+}
+
+/***Write all session data to file***/
+void writeSessionAll(fs::FS& fs, const char* path,int numberSession){
+    for (uint8_t sessionIndex = 0; sessionIndex < numberSession; sessionIndex++) {
+      writeSession(fs,
+                    path,
+                    sessionAttempt[sessionIndex].sessionTitle,
+                    sessionAttempt[sessionIndex].sessionCountA,
+                    sessionAttempt[sessionIndex].sessionCountB);
+    }  
 }
