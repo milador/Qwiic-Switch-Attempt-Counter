@@ -45,7 +45,7 @@ TCA9534 outputModule;           //Output
 bool inputPinMode[NUM_SWITCH] = {GPIO_IN, GPIO_IN};
 bool outputPinMode[NUM_SWITCH] = {GPIO_OUT, GPIO_OUT};
 
-String switchConnectionMessage = "";        //Qwiic modules connection state message 
+String switchConnectionMessage;        //Qwiic modules connection state message 
 
 bool switchStatus[NUM_SWITCH];              //Switch A and B status
 
@@ -103,12 +103,12 @@ void setup() {
     if (inputModule.begin(Wire,INPUT_ADDR) == true && outputModule.begin(Wire,OUTPUT_ADDR) == true ) {
       switchConnectionMessage = "Success: Qwiic Modules are detected";
       LOG.println(switchConnectionMessage);
-      showConnection();
+      showConnection(1);
       break;
     } else {
       switchConnectionMessage = "Error: Qwiic Modules are not detected";
       LOG.println(switchConnectionMessage);
-      showConnection();
+      showConnection(0);
       delay(3000);
     }
   }
@@ -123,6 +123,7 @@ void setup() {
   pinMode(WIO_5S_LEFT, INPUT_PULLUP);
   pinMode(WIO_5S_RIGHT, INPUT_PULLUP);
   pinMode(WIO_5S_PRESS, INPUT_PULLUP);
+
 }
 
 
@@ -274,13 +275,23 @@ void showLoading(String text) {
 }
 
 /*** Show Qwiic modules connection state***/
-void showConnection() {
+void showConnection(int code) {
   
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.drawRect(0,200,320,40,TFT_BLUE); 
   tft.setFreeFont(FF17);                           // Select the font
-  tft.drawString(switchConnectionMessage, 10, 210);// Display connection state
-  
+
+  //Display connection status based on code
+  if(code==0){
+    switchConnectionMessage = "Error: Qwiic Modules are not detected";
+    LOG.println(switchConnectionMessage);
+    tft.drawString(switchConnectionMessage, 10, 210);// Display connection state
+  } else if(code==1){
+    switchConnectionMessage = "Success: Qwiic Modules are detected";
+    LOG.println(switchConnectionMessage);
+    tft.drawString(switchConnectionMessage, 10, 210);// Display connection state
+  }
+    
 }
 
 /*** Initialize Session Data***/
@@ -364,27 +375,27 @@ void mainLoop() {
     deleteFile(CARD, SESSION_FILE_PATH);                    //Delete existing data
     writeSessionAll(CARD, SESSION_FILE_PATH,NUM_SESSION);
     showMain();  
-    showConnection(); 
+    showConnection(1); 
     delay(BUTTON_DEBOUNCE_DELAY);   
   } //Load data in SD Card
   else if (digitalRead(WIO_KEY_C) == LOW) {
     showLoading("Loading...");
     readSessionAll(CARD, SESSION_FILE_PATH);
     showMain();  
-    showConnection();  
+    showConnection(1);  
     delay(BUTTON_DEBOUNCE_DELAY);
   }
   //Highlight previous session 
   if (digitalRead(WIO_5S_UP) == LOW) {
     decreaseSessionNumber();
     showMain();  
-    showConnection();
+    showConnection(1);
     delay(BUTTON_DEBOUNCE_DELAY);
   } //Highlight next session 
   else if (digitalRead(WIO_5S_DOWN) == LOW) {
     increaseSessionNumber();
     showMain();  
-    showConnection();
+    showConnection(1);
     delay(BUTTON_DEBOUNCE_DELAY);
   } //Enter or start session 
   else if (digitalRead(WIO_5S_PRESS) == LOW) {
@@ -417,7 +428,7 @@ void sessionLoop() {
   } //Back to main page
   else if (digitalRead(WIO_KEY_C) == LOW) {
     showMain();  
-    showConnection();
+    showConnection(1);
     delay(BUTTON_DEBOUNCE_DELAY);
   }
 
