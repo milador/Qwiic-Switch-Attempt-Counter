@@ -10,6 +10,7 @@
   4. [STEMMA QT / Qwiic JST SH 4-Pin Cable](https://www.adafruit.com/product/4399) x 1
   5. [Grove to STEMMA QT Cable](https://www.adafruit.com/product/4528) x 1  
   6. Micro USB C Male to USB A Male cable x 1
+  7. Micro SD Card x 1 (Optional)
   
 ### Components to be prepared
 
