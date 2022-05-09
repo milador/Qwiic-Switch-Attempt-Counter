@@ -6,6 +6,7 @@
 
   1. [Arduino IDE](https://www.arduino.cc/en/software)
   2. [Main Code](./Code/)
+  3. [Seeed_Arduino_FS](https://github.com/Seeed-Studio/Seeed_Arduino_FS)
 
 
 ## Software Setup Process
@@ -24,24 +25,34 @@
 
 ### Main Code Setup Process
 
-  1. Visit the **Qwiic_Switch_Attempt_Counter.ino** raw source code file under Code directory.
-  2. Right click on the source code or any place on this page and select **Save Page As…**
-  3. Select the directory you would like to save the software in your computer. 
-  4. Change File name from **Qwiic_Switch_Attempt_Counter** to **Qwiic_Switch_Attempt_Counter.ino**
-  5. Change **Save as type** to **All Files**.
-  6. Click on **Save** button.
-  7. Visit the **Free_Fonts.h** raw source code file under Code directory.
+  1. Visit the **Seeed_Arduino_FS** library github repository page.
+  2. Click on **Code > Download Zip** to download **Seeed_Arduino_FS**.
+  3. Extract **Seeed_Arduino_FS-master.zip** file
+  4. Rename **Seeed_Arduino_FS-master** folder to **Seeed_Arduino_FS** folder under **Seeed_Arduino_FS-master** subdirectory. 
+  5. Copy or move **Seeed_Arduino_FS** folder to Arduino installation library subdirectory. As an example: This is found under **C:\Program Files (x86)\Arduino\libraries in windows 10**.
+  7. Visit the **Qwiic_Switch_Attempt_Counter.ino** raw source code file under Code directory.
   8. Right click on the source code or any place on this page and select **Save Page As…**
-  9. Select the directoryyou selected in step 3.
-  10. Click on **Save** button.
-  11. Open the directory you selected in step 3.
-  12. Double left click or open **Qwiic_Switch_Attempt_Counter** file
-  13. **Arduino IDE** will ask your permission to create a new sketch folder named **Qwiic_Switch_Attempt_Counter** and move **Qwiic_Switch_Attempt_Counter.ino** under this folder.
-  14. Click on the **Ok** button. 
-  15. **Arduino IDE** should now open the **Qwiic_Switch_Attempt_Counter.ino** file automatically.
-  16. Select the Board under **Tools > Board > Seeed SAMD Boards** as **Seeeduino Wio Terminal**
-  17. Select the correct port number under **Tools > Port** which should show COM XX (Seeeduino Wio Terminal) 
-  18. Press the **Verify** button to make sure there is no problem with the software and libraries. 
-  19. Press **Upload** button 
+  9. Select the directory you would like to save the software in your computer. 
+  10. Change File name from **Qwiic_Switch_Attempt_Counter** to **Qwiic_Switch_Attempt_Counter.ino**
+  11. Change **Save as type** to **All Files**.
+  12. Click on **Save** button.
+  13. Visit the **Free_Fonts.h** raw source code file under Code directory.
+  14. Right click on the source code or any place on this page and select **Save Page As…**
+  15. Select the directoryyou selected in step 3.
+  16. Click on **Save** button.
+  17. Open the directory you selected in step 3.
+  18. Double left click or open **Qwiic_Switch_Attempt_Counter** file
+  19. **Arduino IDE** will ask your permission to create a new sketch folder named **Qwiic_Switch_Attempt_Counter** and move **Qwiic_Switch_Attempt_Counter.ino** under this folder.
+  20. Click on the **Ok** button. 
+  21. **Arduino IDE** should now open the **Qwiic_Switch_Attempt_Counter.ino** file automatically.
+  22. Select the Board under **Tools > Board > Seeed SAMD Boards** as **Seeeduino Wio Terminal**
+  23. Select the correct port number under **Tools > Port** which should show COM XX (Seeeduino Wio Terminal) 
+  24. Press the **Verify** button to make sure there is no problem with the software and libraries. 
+  25. Press **Upload** button 
+
+
+### microSD Card Setup
+
+Please make sure your microSD is formatted using FAT format before inserting in WIO Terminal.
 
 
